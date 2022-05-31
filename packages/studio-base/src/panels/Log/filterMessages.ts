@@ -12,24 +12,43 @@
 //   You may not use this file except in compliance with the License.
 
 import { getNormalizedMessage } from "./conversion";
-import { LogMessageEvent } from "./types";
+import { LogLevel, LogMessageEvent } from "./types";
+
+function mapLogLevelBySourceId(logLevel: number, dataSourceId?: string): number {
+  if (dataSourceId === "ros2-local-bagfile" || dataSourceId === "ros2-socket") {
+    return (
+      {
+        [LogLevel.UNKNOWN]: 0,
+        [LogLevel.DEBUG]: 10,
+        [LogLevel.INFO]: 20,
+        [LogLevel.WARN]: 30,
+        [LogLevel.ERROR]: 40,
+        [LogLevel.FATAL]: 50,
+      }[logLevel] ?? logLevel
+    );
+  }
+
+  return logLevel;
+}
 
 export default function filterMessages(
   events: readonly LogMessageEvent[],
-  filter: { minLogLevel: number; searchTerms: string[] },
+  filter: { minLogLevel: number; searchTerms: string[]; dataSourceId?: string },
 ): readonly LogMessageEvent[] {
-  const { minLogLevel, searchTerms } = filter;
+  const { minLogLevel, searchTerms, dataSourceId } = filter;
   const hasActiveFilters = minLogLevel > 1 || searchTerms.length > 0;
   // return all messages if we wouldn't filter anything
   if (!hasActiveFilters) {
     return events;
   }
 
+  const effectiveLogLevel = mapLogLevelBySourceId(minLogLevel, dataSourceId);
+
   const searchTermsInLowerCase = searchTerms.map((term) => term.toLowerCase());
 
   return events.filter((event) => {
     const logMessage = event.message;
-    if (logMessage.level < minLogLevel) {
+    if (logMessage.level < effectiveLogLevel) {
       return false;
     }
 

@@ -14,10 +14,10 @@
 import { MessageEvent } from "@foxglove/studio-base/players/types";
 
 import filterMessages from "./filterMessages";
-import { Ros1RosgraphMsgs$Log } from "./types";
+import { LogLevel, Ros1RosgraphMsgs$Log, Ros2RosgraphMsgs$Log } from "./types";
 
 describe("filter", () => {
-  const msgs = [
+  const ros1msgs = [
     {
       topic: "/some_topic",
       receiveTime: { sec: 123, nsec: 456 },
@@ -29,36 +29,68 @@ describe("filter", () => {
     },
   ] as MessageEvent<Ros1RosgraphMsgs$Log>[];
 
+  const ros2msgs = [
+    {
+      topic: "/some_topic",
+      receiveTime: { sec: 123, nsec: 456 },
+      message: {
+        msg: "Couldn't find int 83757.",
+        level: 30,
+        name: "/some_topic",
+      },
+    },
+  ] as MessageEvent<Ros2RosgraphMsgs$Log>[];
+
   it("should remove when minLogLevel is higher than msg level", () => {
-    expect(filterMessages(msgs, { minLogLevel: 3, searchTerms: [] })).toEqual([]);
+    expect(filterMessages(ros1msgs, { minLogLevel: 3, searchTerms: [] })).toEqual([]);
   });
 
   it("should filter when minLogLevel is same as msg level", () => {
-    expect(filterMessages(msgs, { minLogLevel: 2, searchTerms: [] })).toEqual(msgs);
+    expect(filterMessages(ros1msgs, { minLogLevel: 2, searchTerms: [] })).toEqual(ros1msgs);
+  });
+
+  it("should map log levels by data source", () => {
+    expect(
+      filterMessages(ros2msgs, {
+        minLogLevel: LogLevel.INFO,
+        searchTerms: [],
+        dataSourceId: "ros2-socket",
+      }),
+    ).toEqual(ros2msgs);
+
+    expect(
+      filterMessages(ros2msgs, {
+        minLogLevel: LogLevel.ERROR,
+        searchTerms: [],
+        dataSourceId: "ros2-socket",
+      }),
+    ).toEqual([]);
   });
 
   describe("when minLogLevel lower than or equal to msg level", () => {
     const minLogLevel = 1;
 
     it("should keep when search term is empty", () => {
-      expect(filterMessages(msgs, { minLogLevel, searchTerms: ["/some_topic"] })).toEqual(msgs);
+      expect(filterMessages(ros1msgs, { minLogLevel, searchTerms: ["/some_topic"] })).toEqual(
+        ros1msgs,
+      );
     });
 
     it("should keep when msg name contains search terms", () => {
-      expect(filterMessages(msgs, { minLogLevel, searchTerms: ["some"] })).toEqual(msgs);
+      expect(filterMessages(ros1msgs, { minLogLevel, searchTerms: ["some"] })).toEqual(ros1msgs);
     });
 
     it("should keep when msg contains search term", () => {
-      expect(filterMessages(msgs, { minLogLevel, searchTerms: ["int"] })).toEqual(msgs);
+      expect(filterMessages(ros1msgs, { minLogLevel, searchTerms: ["int"] })).toEqual(ros1msgs);
     });
 
     it("should remove when msg name doesn't contain any search terms", () => {
-      expect(filterMessages(msgs, { minLogLevel, searchTerms: ["random"] })).toEqual([]);
+      expect(filterMessages(ros1msgs, { minLogLevel, searchTerms: ["random"] })).toEqual([]);
     });
 
     it("should keep when minLogLevel equals msg level and msg contains search terms", () => {
-      expect(filterMessages(msgs, { minLogLevel: 2, searchTerms: ["int", "random"] })).toEqual(
-        msgs,
+      expect(filterMessages(ros1msgs, { minLogLevel: 2, searchTerms: ["int", "random"] })).toEqual(
+        ros1msgs,
       );
     });
   });
