@@ -17,10 +17,6 @@ import { makeStyles } from "@mui/styles";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { useDataSourceInfo, useMessagesByTopic } from "@foxglove/studio-base/PanelAPI";
-import {
-  MessagePipelineContext,
-  useMessagePipeline,
-} from "@foxglove/studio-base/components/MessagePipeline";
 import Panel from "@foxglove/studio-base/components/Panel";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import Stack from "@foxglove/studio-base/components/Stack";
@@ -64,14 +60,11 @@ const useStyles = makeStyles({
   },
 });
 
-const selectPlayerSourceId = (ctx: MessagePipelineContext) => ctx.playerState.urlState?.sourceId;
-
 const LogPanel = React.memo(({ config, saveConfig }: Props) => {
   const classes = useStyles();
   const { topics } = useDataSourceInfo();
   const { minLogLevel, searchTerms } = config;
   const { timeFormat, timeZone } = useAppTimeFormat();
-  const dataSourceId = useMessagePipeline(selectPlayerSourceId);
 
   const onFilterChange = useCallback<FilterBarProps["onFilterChange"]>(
     (filter) => {
@@ -107,6 +100,11 @@ const LogPanel = React.memo(({ config, saveConfig }: Props) => {
     historySize: 100000,
   }) as { [key: string]: LogMessageEvent[] };
 
+  const topicDatatype = useMemo(
+    () => availableTopics.find((topic) => topic.name === topicToRender)?.datatype,
+    [availableTopics, topicToRender],
+  );
+
   // avoid making new sets for node names
   // the filter bar uses the node names during on-demand filtering
   const seenNodeNamesCache = useRef(new Set<string>());
@@ -125,8 +123,8 @@ const LogPanel = React.memo(({ config, saveConfig }: Props) => {
   const searchTermsSet = useMemo(() => new Set(searchTerms), [searchTerms]);
 
   const filteredMessages = useMemo(
-    () => filterMessages(msgEvents, { minLogLevel, searchTerms, dataSourceId }),
-    [msgEvents, minLogLevel, searchTerms, dataSourceId],
+    () => filterMessages(msgEvents, { minLogLevel, searchTerms, topicDatatype }),
+    [msgEvents, minLogLevel, searchTerms, topicDatatype],
   );
 
   const listRef = useRef<IList>(ReactNull);

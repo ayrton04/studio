@@ -54,7 +54,7 @@ describe("filter", () => {
       filterMessages(ros2msgs, {
         minLogLevel: LogLevel.INFO,
         searchTerms: [],
-        dataSourceId: "ros2-socket",
+        topicDatatype: "rcl_interfaces/msg/Log",
       }),
     ).toEqual(ros2msgs);
 
@@ -62,7 +62,7 @@ describe("filter", () => {
       filterMessages(ros2msgs, {
         minLogLevel: LogLevel.ERROR,
         searchTerms: [],
-        dataSourceId: "ros2-socket",
+        topicDatatype: "rcl_interfaces/msg/Log",
       }),
     ).toEqual([]);
   });

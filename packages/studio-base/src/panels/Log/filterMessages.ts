@@ -14,8 +14,8 @@
 import { getNormalizedMessage } from "./conversion";
 import { LogLevel, LogMessageEvent } from "./types";
 
-function mapLogLevelBySourceId(logLevel: number, dataSourceId?: string): number {
-  if (dataSourceId === "ros2-local-bagfile" || dataSourceId === "ros2-socket") {
+function mapLogLevelByTopicDatatype(logLevel: number, topicDatatype?: string): number {
+  if (topicDatatype === "rcl_interfaces/msg/Log" || topicDatatype === "ros.rcl_interfaces.Log") {
     return (
       {
         [LogLevel.UNKNOWN]: 0,
@@ -33,16 +33,16 @@ function mapLogLevelBySourceId(logLevel: number, dataSourceId?: string): number 
 
 export default function filterMessages(
   events: readonly LogMessageEvent[],
-  filter: { minLogLevel: number; searchTerms: string[]; dataSourceId?: string },
+  filter: { minLogLevel: number; searchTerms: string[]; topicDatatype?: string },
 ): readonly LogMessageEvent[] {
-  const { minLogLevel, searchTerms, dataSourceId } = filter;
+  const { minLogLevel, searchTerms, topicDatatype } = filter;
   const hasActiveFilters = minLogLevel > 1 || searchTerms.length > 0;
   // return all messages if we wouldn't filter anything
   if (!hasActiveFilters) {
     return events;
   }
 
-  const effectiveLogLevel = mapLogLevelBySourceId(minLogLevel, dataSourceId);
+  const effectiveLogLevel = mapLogLevelByTopicDatatype(minLogLevel, topicDatatype);
 
   const searchTermsInLowerCase = searchTerms.map((term) => term.toLowerCase());
 
